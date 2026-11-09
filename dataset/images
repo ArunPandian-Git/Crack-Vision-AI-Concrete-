@@ -1,3 +1,4 @@
+# Original concrete images
 Training=70% 
 Validation=20% 
 Testing=10% 
