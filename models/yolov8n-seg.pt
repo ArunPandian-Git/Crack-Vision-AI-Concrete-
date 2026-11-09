@@ -1,1 +1,5 @@
+from ultralytics import YOLO
 
+model = YOLO("yolov8n-seg.pt")
+
+print("Pretrained model loaded successfully")
