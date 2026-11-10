@@ -1,13 +1,16 @@
 import streamlit as st
 import cv2
 import numpy as np
+
+from pathlib import Path
+from ultralytics import YOLO
+from PIL import Image
+
 import pandas as pd
 import io
-
 from PIL import Image
-from pathlib import Path
 from datetime import datetime
-from ultralytics import YOLO
+
 
 
 # ==========================================
@@ -96,29 +99,37 @@ div.stButton > button:hover {
 </style>
 """, unsafe_allow_html=True)
 
-
-# ==========================================
-# LOAD DEEP LEARNING MODEL
-# ==========================================
+# ==================================
+# YOLO MODEL LOADING
+# ==================================
 
 @st.cache_resource
 def load_model():
 
-    model_paths = [
-        Path("models/best.pt"),
-        Path("results/crack_detection/weights/best.pt")
-    ]
+    model_path = Path("models/best.pt")
 
-    for path in model_paths:
+    if not model_path.exists():
 
-        if path.exists():
-            return YOLO(str(path))
+        st.error("YOLO model not found!")
 
-    return None
+        return None
+
+    try:
+
+        model = YOLO(str(model_path))
+
+        return model
+
+    except Exception as e:
+
+        st.error("Error loading YOLO model")
+
+        st.exception(e)
+
+        return None
 
 
 model = load_model()
-
 
 # ==========================================
 # SESSION STATE
