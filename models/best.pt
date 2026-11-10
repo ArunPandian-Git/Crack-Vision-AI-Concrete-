@@ -1,1 +1,21 @@
-https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8n-seg.pt
+import nest_asyncio
+nest_asyncio.apply()
+
+from ultralytics import YOLO
+
+# Load pretrained segmentation model
+model = YOLO("yolov8n-seg.pt")
+
+# Train the model
+results = model.train(
+    data="/crack-seg.ndjson",
+    epochs=5,
+    imgsz=640,
+    batch=8,
+    project="results",
+    name="crack_detection",
+    patience=10,
+    device="cpu"
+)
+
+print("Training Completed!")
