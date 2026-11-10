@@ -1,0 +1,3 @@
+mkdir results/predictions
+mkdir results/graphs
+mkdir results/reports
