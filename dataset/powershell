@@ -1,0 +1,7 @@
+mkdir dataset/images/train
+mkdir dataset/images/val
+mkdir dataset/images/test
+
+mkdir dataset/labels/train
+mkdir dataset/labels/val
+mkdir dataset/labels/test
