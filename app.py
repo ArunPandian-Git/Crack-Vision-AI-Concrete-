@@ -1,88 +1,59 @@
 import streamlit as st
-import cv2
+import pandas as pd
 import numpy as np
 
-from pathlib import Path
+from PIL import Image
 from ultralytics import YOLO
-from PIL import Image
 
-import pandas as pd
-import io
-from PIL import Image
+from pathlib import Path
 from datetime import datetime
 
 
-
-# ==========================================
+# ==================================
 # PAGE CONFIGURATION
-# ==========================================
+# ==================================
 
 st.set_page_config(
     page_title="CrackVision AI",
     page_icon="🏗️",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
 
-# ==========================================
+# ==================================
 # CUSTOM CSS
-# ==========================================
+# ==================================
 
 st.markdown("""
 <style>
 
 .stApp {
-    background-color: #101827;
-    color: #ffffff;
+    background-color: #0b1120;
+    color: white;
 }
 
-header {
-    background-color: transparent;
+[data-testid="stSidebar"] {
+    background-color: #111827;
 }
 
-.block-container {
-    padding-top: 2rem;
-    padding-bottom: 2rem;
-}
-
-.main-title {
-    font-size: 38px;
-    font-weight: 800;
-    color: #38bdf8;
-}
-
-.subtitle {
-    color: #94a3b8;
-    font-size: 16px;
+h1, h2, h3 {
+    color: #f8fafc;
 }
 
 .metric-card {
-    background-color: #1e293b;
+    background: #172033;
     padding: 22px;
     border-radius: 12px;
-    border: 1px solid #334155;
+    border: 1px solid #263449;
 }
 
-.metric-title {
-    color: #94a3b8;
-    font-size: 14px;
-}
-
-.metric-value {
-    color: #38bdf8;
-    font-size: 30px;
+.status {
+    color: #22c55e;
     font-weight: bold;
 }
 
-.section-title {
-    color: #38bdf8;
-    font-size: 23px;
-    font-weight: bold;
-}
-
-div.stButton > button {
-    background-color: #0284c7;
+.stButton > button {
+    background-color: #0d9488;
     color: white;
     border-radius: 8px;
     border: none;
@@ -91,207 +62,211 @@ div.stButton > button {
     width: 100%;
 }
 
-div.stButton > button:hover {
-    background-color: #0369a1;
+.stButton > button:hover {
+    background-color: #0f766e;
     color: white;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
+
 # ==================================
-# YOLO MODEL LOADING
+# MODEL LOADING
 # ==================================
+
+MODEL_PATH = Path("models/best.pt")
+
 
 @st.cache_resource
 def load_model():
 
-    model_path = Path("models/best.pt")
-
-    if not model_path.exists():
-
-        st.error("YOLO model not found!")
+    if not MODEL_PATH.exists():
 
         return None
 
-    try:
-
-        model = YOLO(str(model_path))
-
-        return model
-
-    except Exception as e:
-
-        st.error("Error loading YOLO model")
-
-        st.exception(e)
-
-        return None
+    return YOLO(str(MODEL_PATH))
 
 
-model = load_model()
+try:
 
-# ==========================================
+    model = load_model()
+
+    model_status = model is not None
+
+except Exception as e:
+
+    model = None
+
+    model_status = False
+
+    model_error = str(e)
+
+
+# ==================================
 # SESSION STATE
-# ==========================================
+# ==================================
 
 if "history" not in st.session_state:
+
     st.session_state.history = []
 
-if "analysis" not in st.session_state:
-    st.session_state.analysis = None
 
-
-# ==========================================
+# ==================================
 # SIDEBAR
-# ==========================================
+# ==================================
 
-with st.sidebar:
+st.sidebar.title("🏗️ CrackVision AI")
 
-    st.markdown(
-        "<h2 style='color:#38bdf8;'>🏗️ CrackVision AI</h2>",
-        unsafe_allow_html=True
-    )
+st.sidebar.caption(
+    "AI Concrete Inspection Platform"
+)
 
-    st.write("AI Concrete Inspection Platform")
+page = st.sidebar.radio(
 
-    st.divider()
+    "NAVIGATION",
 
-    page = st.radio(
-        "Navigation",
-        [
-            "Dashboard",
-            "Crack Detection",
-            "Analysis History",
-            "About Project"
-        ]
-    )
+    [
+        "Dashboard",
+        "Crack Detection",
+        "Analysis History",
+        "About Project"
+    ]
 
-    st.divider()
+)
 
-    st.write("### Model Status")
+st.sidebar.divider()
 
-    if model is not None:
-        st.success("Deep Learning Model Loaded")
-    else:
-        st.error("Model Not Found")
+if model_status:
 
-    st.caption("YOLOv8 Segmentation Architecture")
+    st.sidebar.success("AI Model Online")
+
+else:
+
+    st.sidebar.error("AI Model Offline")
 
 
-# ==========================================
+# ==================================
 # DASHBOARD
-# ==========================================
+# ==================================
 
 if page == "Dashboard":
 
-    st.markdown(
-        '<div class="main-title">CrackVision AI</div>',
-        unsafe_allow_html=True
-    )
+    st.title("🏗️ CrackVision AI")
 
-    st.markdown(
-        '<div class="subtitle">'
-        'Intelligent Concrete Crack Detection '
-        'and Segmentation System'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-    st.divider()
-
-    st.markdown(
-        '<div class="section-title">Project Dashboard</div>',
-        unsafe_allow_html=True
+    st.write(
+        "Intelligent Concrete Crack Detection "
+        "and Segmentation System"
     )
 
     total = len(st.session_state.history)
 
-    detected = sum(
-        item["Crack Detected"] == "Yes"
-        for item in st.session_state.history
+    cracks = sum(
+        x["Cracks Detected"]
+        for x in st.session_state.history
     )
 
-    col1, col2, col3 = st.columns(3)
+    c1, c2, c3 = st.columns(3)
 
-    with col1:
+    c1.metric(
+        "Total Images Analyzed",
+        total
+    )
 
-        st.metric(
-            "Total Images Analyzed",
-            total
-        )
+    c2.metric(
+        "Cracks Detected",
+        cracks
+    )
 
-    with col2:
-
-        st.metric(
-            "Cracks Detected",
-            detected
-        )
-
-    with col3:
-
-        st.metric(
-            "Model Architecture",
-            "YOLOv8"
-        )
+    c3.metric(
+        "Model Architecture",
+        "YOLOv8"
+    )
 
     st.divider()
 
     st.subheader("System Overview")
 
-    st.write("""
-    CrackVision AI is a Deep Learning application
-    designed to identify and segment cracks in
-    concrete structures.
-
-    The application uses Computer Vision and
-    YOLOv8 segmentation to analyze uploaded
-    concrete images.
-
-    Upload an image to begin AI-powered inspection.
-    """)
-
-    if st.button("Start Crack Detection"):
-
-        st.session_state.analysis = None
-        st.info("Select Crack Detection from the sidebar.")
-
-
-# ==========================================
-# CRACK DETECTION
-# ==========================================
-
-elif page == "Crack Detection":
-
-    st.markdown(
-        '<div class="main-title">AI Crack Detection</div>',
-        unsafe_allow_html=True
-    )
-
-    st.write(
-        "Upload a concrete image for Deep Learning analysis."
-    )
-
-    st.divider()
-
-    col1, col2 = st.columns([2, 1])
+    col1, col2 = st.columns(2)
 
     with col1:
 
-        uploaded_file = st.file_uploader(
-            "Upload Concrete Image",
-            type=["jpg", "jpeg", "png"]
+        st.markdown(
+            """
+            ### AI Inspection
+
+            Upload concrete images and analyze
+            structural cracks using deep learning.
+
+            - Image Upload
+            - Crack Detection
+            - Segmentation Masks
+            - Confidence Scores
+            """
         )
 
     with col2:
 
-        confidence = st.slider(
-            "Detection Confidence",
-            0.10,
-            0.90,
-            0.25,
-            0.05
+        st.markdown(
+            """
+            ### Model Information
+
+            **Architecture:** YOLOv8n-Seg
+
+            **Task:** Instance Segmentation
+
+            **Class:** Concrete Crack
+
+            **Framework:** PyTorch
+
+            **Frontend:** Streamlit
+            """
         )
+
+    if model_status:
+
+        st.success("YOLOv8 model loaded successfully!")
+
+    else:
+
+        st.warning(
+            "Model not available. Add the trained "
+            "models/best.pt file."
+        )
+
+
+# ==================================
+# CRACK DETECTION
+# ==================================
+
+elif page == "Crack Detection":
+
+    st.title("🔍 Concrete Crack Detection")
+
+    st.write(
+        "Upload an image to perform AI-powered "
+        "concrete crack inspection."
+    )
+
+    uploaded_file = st.file_uploader(
+
+        "Upload Concrete Image",
+
+        type=["jpg", "jpeg", "png"]
+
+    )
+
+    confidence = st.slider(
+
+        "Detection Confidence",
+
+        0.10,
+
+        0.90,
+
+        0.25
+
+    )
 
     if uploaded_file:
 
@@ -299,315 +274,199 @@ elif page == "Crack Detection":
             uploaded_file
         ).convert("RGB")
 
-        image_array = np.array(image)
-
-        st.subheader("Original Image")
+        st.subheader("Uploaded Image")
 
         st.image(
             image,
             use_container_width=True
         )
 
-        if st.button("🚀 Analyze Image"):
+        if st.button("🚀 Analyze Concrete Image"):
 
             if model is None:
 
                 st.error(
-                    "Model not found. "
-                    "Place best.pt inside the models folder."
+                    "AI model is not loaded. "
+                    "Check models/best.pt."
                 )
 
             else:
 
                 with st.spinner(
-                    "AI is analyzing the concrete image..."
+                    "AI is analyzing your image..."
                 ):
 
                     results = model.predict(
-                        image_array,
+
+                        source=image,
+
                         conf=confidence,
+
+                        imgsz=640,
+
                         verbose=False
+
                     )
 
                     result = results[0]
 
-                    annotated = result.plot()
-
-                    annotated = cv2.cvtColor(
-                        annotated,
-                        cv2.COLOR_BGR2RGB
+                    # Segmentation count
+                    crack_count = (
+                        len(result.masks.data)
+                        if result.masks is not None
+                        else 0
                     )
 
-                    boxes = result.boxes
+                    # Confidence
+                    if (
+                        result.boxes is not None
+                        and len(result.boxes) > 0
+                    ):
 
-                    crack_detected = (
-                        boxes is not None and len(boxes) > 0
-                    )
-
-                    scores = []
-
-                    if crack_detected:
-
-                        scores = (
-                            boxes.conf.cpu().numpy()
-                        )
-
-                        confidence_score = (
-                            float(np.max(scores)) * 100
-                        )
+                        avg_conf = float(
+                            result.boxes.conf.mean()
+                        ) * 100
 
                     else:
 
-                        confidence_score = 0.0
+                        avg_conf = 0.0
 
-                    # Segmentation mask
+                    # Prediction image
+                    annotated = result.plot()
 
-                    crack_coverage = 0.0
+                    annotated = annotated[:, :, ::-1]
 
-                    if result.masks is not None:
+                    st.success(
+                        "Image analysis completed!"
+                    )
 
-                        masks = (
-                            result.masks.data.cpu().numpy()
-                        )
+                    col1, col2 = st.columns(2)
 
-                        combined_mask = np.zeros(
-                            image_array.shape[:2],
-                            dtype=np.uint8
-                        )
+                    with col1:
 
-                        for mask in masks:
+                        st.subheader("Original Image")
 
-                            resized_mask = cv2.resize(
-                                mask,
-                                (
-                                    image_array.shape[1],
-                                    image_array.shape[0]
-                                )
-                            )
+                        st.image(image)
 
-                            combined_mask = np.maximum(
-                                combined_mask,
-                                (resized_mask > 0.5).astype(
-                                    np.uint8
-                                )
-                            )
+                    with col2:
 
-                        crack_pixels = np.count_nonzero(
-                            combined_mask
-                        )
+                        st.subheader("AI Prediction")
 
-                        total_pixels = combined_mask.size
+                        st.image(annotated)
 
-                        crack_coverage = (
-                            crack_pixels / total_pixels
-                        ) * 100
+                    st.divider()
 
-                    # Save analysis
+                    c1, c2 = st.columns(2)
 
-                    analysis = {
-                        "image": image.copy(),
-                        "annotated": annotated,
-                        "detected": crack_detected,
-                        "confidence": confidence_score,
-                        "coverage": crack_coverage,
-                        "time": datetime.now().strftime(
-                            "%d-%m-%Y %H:%M:%S"
-                        )
-                    }
+                    c1.metric(
+                        "Cracks Detected",
+                        crack_count
+                    )
 
-                    st.session_state.analysis = analysis
+                    c2.metric(
+                        "Average Confidence",
+                        f"{avg_conf:.2f}%"
+                    )
 
                     st.session_state.history.append({
-                        "Date": analysis["time"],
-                        "Crack Detected": (
-                            "Yes" if crack_detected else "No"
+
+                        "Date": datetime.now().strftime(
+                            "%Y-%m-%d %H:%M:%S"
                         ),
-                        "Confidence": round(
-                            confidence_score, 2
-                        ),
-                        "Coverage": round(
-                            crack_coverage, 2
-                        )
+
+                        "Image": uploaded_file.name,
+
+                        "Cracks Detected": crack_count,
+
+                        "Confidence": round(avg_conf, 2)
+
                     })
 
-    # Display results
 
-    analysis = st.session_state.analysis
-
-    if analysis is not None:
-
-        st.divider()
-
-        st.subheader("AI Detection Results")
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-
-            st.image(
-                analysis["image"],
-                caption="Original Image",
-                use_container_width=True
-            )
-
-        with col2:
-
-            st.image(
-                analysis["annotated"],
-                caption="AI Segmentation Result",
-                use_container_width=True
-            )
-
-        st.divider()
-
-        st.subheader("Analysis Metrics")
-
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-
-            st.metric(
-                "Crack Detection",
-                "YES" if analysis["detected"] else "NO"
-            )
-
-        with col2:
-
-            st.metric(
-                "Maximum Confidence",
-                f"{analysis['confidence']:.2f}%"
-            )
-
-        with col3:
-
-            st.metric(
-                "Crack Coverage",
-                f"{analysis['coverage']:.2f}%"
-            )
-
-        if analysis["detected"]:
-
-            st.warning(
-                "Potential concrete cracks detected. "
-                "Professional inspection is recommended."
-            )
-
-        else:
-
-            st.success(
-                "No cracks detected by the model."
-            )
-
-        st.caption(
-            "Image-based AI analysis only; this result "
-            "does not establish structural safety."
-        )
-
-        report = pd.DataFrame([{
-            "Date": analysis["time"],
-            "Crack Detected": analysis["detected"],
-            "Maximum Confidence": analysis["confidence"],
-            "Crack Coverage": analysis["coverage"]
-        }])
-
-        st.download_button(
-            "📥 Download Analysis CSV",
-            report.to_csv(index=False),
-            file_name="crackvision_report.csv",
-            mime="text/csv"
-        )
-
-
-# ==========================================
+# ==================================
 # ANALYSIS HISTORY
-# ==========================================
+# ==================================
 
 elif page == "Analysis History":
 
-    st.markdown(
-        '<div class="main-title">Analysis History</div>',
-        unsafe_allow_html=True
-    )
+    st.title("📊 Analysis History")
 
     if st.session_state.history:
 
-        history_df = pd.DataFrame(
+        df = pd.DataFrame(
             st.session_state.history
         )
 
         st.dataframe(
-            history_df,
+            df,
             use_container_width=True
         )
 
+        csv = df.to_csv(index=False).encode("utf-8")
+
         st.download_button(
-            "Download History",
-            history_df.to_csv(index=False),
-            file_name="crackvision_history.csv",
+
+            "Download Analysis Report",
+
+            data=csv,
+
+            file_name="crack_analysis.csv",
+
             mime="text/csv"
+
         )
 
         if st.button("Clear History"):
 
             st.session_state.history = []
 
-            st.session_state.analysis = None
-
             st.rerun()
 
     else:
 
-        st.info("No image analysis available yet.")
+        st.info(
+            "No inspection records available yet."
+        )
 
 
-# ==========================================
+# ==================================
 # ABOUT PROJECT
-# ==========================================
+# ==================================
 
 elif page == "About Project":
 
+    st.title("ℹ️ About CrackVision AI")
+
     st.markdown(
-        '<div class="main-title">About CrackVision AI</div>',
-        unsafe_allow_html=True
-    )
+        """
+        ## Intelligent Concrete Inspection Platform
 
-    st.write("""
-    CrackVision AI is an AI-powered concrete
-    crack detection and segmentation application.
+        CrackVision AI is a deep learning application
+        designed to identify and segment cracks in
+        concrete structures.
 
-    ### Deep Learning Technologies
+        ### Technologies Used
 
-    - Convolutional Neural Networks
-    - YOLOv8 Segmentation
-    - Transfer Learning
-    - Computer Vision
-    - Image Processing
+        - Python
+        - YOLOv8 Segmentation
+        - PyTorch
+        - OpenCV
+        - Streamlit
+        - Computer Vision
 
-    ### Development Technologies
+        ### Project Workflow
 
-    - Python
-    - PyTorch
-    - OpenCV
-    - NumPy
-    - Streamlit
+        1. Dataset Preparation
+        2. Image Annotation
+        3. YOLOv8 Model Training
+        4. Model Evaluation
+        5. Image Prediction
+        6. Crack Segmentation
+        7. Web Application Deployment
 
-    ### Application Features
+        ### Objective
 
-    - Concrete image analysis
-    - Crack detection
-    - Pixel-level segmentation
-    - Confidence visualization
-    - Crack coverage analysis
-    - Downloadable reports
-
-    ### Project Objective
-
-    To demonstrate how Deep Learning and
-    Computer Vision can assist in identifying
-    visible cracks in concrete surfaces.
-    """)
-
-    st.info(
-        "Developed as a Deep Learning and "
-        "Computer Vision portfolio project."
+        To support automated concrete crack inspection
+        through computer vision and deep learning.
+        """
     )
