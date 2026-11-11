@@ -295,7 +295,7 @@ elif page == "Crack Detection":
             use_container_width=True
         )
 
-        if st.button("🚀 Analyze Concrete Image"):
+     if st.button("🚀 Analyze Concrete Image"):
 
             if model is None:
 
