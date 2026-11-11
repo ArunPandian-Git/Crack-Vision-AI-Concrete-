@@ -310,45 +310,45 @@ elif page == "Crack Detection":
                     "AI is analyzing your image..."
                 ):
 
-                    results = model.predict(
-
-                        source=image,
-
-                        conf=confidence,
-
-                        imgsz=640,
-
-                        verbose=False
-
-                    )
+                 results = model.predict(
+    source=image,
+    conf=0.10,
+    iou=0.45,
+    imgsz=640,
+    max_det=300,
+    verbose=False
+)
 
                     result = results[0]
+# ==================================
+# CRACK COUNT AND CONFIDENCE
+# ==================================
 
-                    # Segmentation count
-                    crack_count = (
-                        len(result.masks.data)
-                        if result.masks is not None
-                        else 0
-                    )
+if result.boxes is not None and len(result.boxes) > 0:
 
-                    # Confidence
-                    if (
-                        result.boxes is not None
-                        and len(result.boxes) > 0
-                    ):
+    # Total detected cracks
+    crack_count = len(result.boxes)
 
-                        avg_conf = float(
-                            result.boxes.conf.mean()
-                        ) * 100
+    # Extract confidence scores
+    confidence_scores = result.boxes.conf.cpu().numpy()
 
-                    else:
+    # Calculate average confidence
+    avg_conf = float(np.mean(confidence_scores) * 100)
 
-                        avg_conf = 0.0
+    # Maximum confidence
+    max_conf = float(np.max(confidence_scores) * 100)
 
-                    # Prediction image
-                    annotated = result.plot()
+else:
 
-                    annotated = annotated[:, :, ::-1]
+    crack_count = 0
+    avg_conf = 0.0
+    max_conf = 0.0
+
+ # Generate YOLO prediction visualization
+annotated = result.plot()
+
+# Convert BGR to RGB
+annotated = annotated[:, :, ::-1].copy()
 
                     st.success(
                         "Image analysis completed!"
@@ -370,18 +370,22 @@ elif page == "Crack Detection":
 
                     st.divider()
 
-                    c1, c2 = st.columns(2)
+                   c1, c2, c3 = st.columns(3)
 
-                    c1.metric(
-                        "Cracks Detected",
-                        crack_count
-                    )
+c1.metric(
+    "Cracks Detected",
+    crack_count
+)
 
-                    c2.metric(
-                        "Average Confidence",
-                        f"{avg_conf:.2f}%"
-                    )
+c2.metric(
+    "Average Confidence",
+    f"{avg_conf:.2f}%"
+)
 
+c3.metric(
+    "Highest Confidence",
+    f"{max_conf:.2f}%"
+)
                     st.session_state.history.append({
 
                         "Date": datetime.now().strftime(
