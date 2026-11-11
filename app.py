@@ -75,32 +75,34 @@ h1, h2, h3 {
 # MODEL LOADING
 # ==================================
 
-MODEL_PATH = Path("models/best.pt")
+MODEL_PATH = BASE_DIR / "models" / "best.pt"
 
+st.write("Model Path:", str(MODEL_PATH))
+st.write("Model Exists:", MODEL_PATH.exists())
+
+if MODEL_PATH.exists():
+    st.write(
+        "Model Size:",
+        round(MODEL_PATH.stat().st_size / (1024 * 1024), 2),
+        "MB"
+    )
 
 @st.cache_resource
 def load_model():
-
-    if not MODEL_PATH.exists():
-
-        return None
-
     return YOLO(str(MODEL_PATH))
 
-
 try:
-
-    model = load_model()
-
-    model_status = model is not None
+    if MODEL_PATH.exists():
+        model = load_model()
+        st.success("AI Model Online!")
+    else:
+        model = None
+        st.error("best.pt file not found!")
 
 except Exception as e:
-
     model = None
-
-    model_status = False
-
-    model_error = str(e)
+    st.error("YOLO Model Loading Failed")
+    st.exception(e)
 
 
 # ==================================
