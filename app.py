@@ -391,7 +391,7 @@ elif page == "Crack Detection":
                         "Confidence": round(avg_conf, 2)
 
                     })
-```
+
 
 # ==================================
 # ANALYSIS HISTORY
