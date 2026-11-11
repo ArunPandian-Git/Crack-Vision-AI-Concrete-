@@ -248,7 +248,6 @@ if page == "Dashboard":
             "models/best.pt file."
         )
 
-```python
 # ==================================
 # CRACK DETECTION
 # ==================================
