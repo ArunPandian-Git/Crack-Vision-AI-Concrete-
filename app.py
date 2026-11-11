@@ -70,38 +70,51 @@ h1, h2, h3 {
 </style>
 """, unsafe_allow_html=True)
 
-# Get project location
+# ==================================
+# MODEL LOADING
+# ==================================
+
 BASE_DIR = Path(__file__).resolve().parent
 
-# Locate trained model
 MODEL_PATH = BASE_DIR / "models" / "best.pt"
 
-st.write("Model Path:", str(MODEL_PATH))
-st.write("Model Exists:", MODEL_PATH.exists())
+# Initialize variables BEFORE loading
+model = None
+model_status = False
+model_error = None
 
-if MODEL_PATH.exists():
-    st.write(
-        "Model Size:",
-        round(MODEL_PATH.stat().st_size / (1024 * 1024), 2),
-        "MB"
-    )
 
 @st.cache_resource
 def load_model():
+
+    if not MODEL_PATH.is_file():
+        raise FileNotFoundError(
+            f"Model not found: {MODEL_PATH}"
+        )
+
     return YOLO(str(MODEL_PATH))
 
+
 try:
-    if MODEL_PATH.exists():
-        model = load_model()
-        st.success("AI Model Online!")
-    else:
-        model = None
-        st.error("best.pt file not found!")
+
+    model = load_model()
+    model_status = True
 
 except Exception as e:
+
     model = None
+    model_status = False
+    model_error = str(e)
+
     st.error("YOLO Model Loading Failed")
     st.exception(e)
+
+
+# Display model status
+if model_status:
+    st.success("AI Model Online!")
+else:
+    st.error("AI Model Offline")
 
 
 # ==================================
