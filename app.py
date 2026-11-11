@@ -248,7 +248,7 @@ if page == "Dashboard":
             "models/best.pt file."
         )
 
-
+```python
 # ==================================
 # CRACK DETECTION
 # ==================================
@@ -263,30 +263,21 @@ elif page == "Crack Detection":
     )
 
     uploaded_file = st.file_uploader(
-
         "Upload Concrete Image",
-
         type=["jpg", "jpeg", "png"]
-
     )
 
     confidence = st.slider(
-
         "Detection Confidence",
-
-        0.10,
-
-        0.90,
-
-        0.25
-
+        min_value=0.10,
+        max_value=0.90,
+        value=0.25,
+        step=0.05
     )
 
     if uploaded_file:
 
-        image = Image.open(
-            uploaded_file
-        ).convert("RGB")
+        image = Image.open(uploaded_file).convert("RGB")
 
         st.subheader("Uploaded Image")
 
@@ -295,64 +286,56 @@ elif page == "Crack Detection":
             use_container_width=True
         )
 
-     if st.button("🚀 Analyze Concrete Image"):
+        if st.button("🚀 Analyze Concrete Image"):
 
             if model is None:
 
-                st.error(
-                    "AI model is not loaded. "
-                    "Check models/best.pt."
-                )
+                st.error("AI model is not loaded. Check models/best.pt.")
 
             else:
 
-                with st.spinner(
-                    "AI is analyzing your image..."
-                ):
+                with st.spinner("AI is analyzing your image..."):
 
-                 results = model.predict(
-    source=image,
-    conf=0.10,
-    iou=0.45,
-    imgsz=640,
-    max_det=300,
-    verbose=False
-)
-
-                
-# ==================================
-# CRACK COUNT AND CONFIDENCE
-# ==================================
-
-if result.boxes is not None and len(result.boxes) > 0:
-
-    # Total detected cracks
-    crack_count = len(result.boxes)
-
-    # Extract confidence scores
-    confidence_scores = result.boxes.conf.cpu().numpy()
-
-    # Calculate average confidence
-    avg_conf = float(np.mean(confidence_scores) * 100)
-
-    # Maximum confidence
-    max_conf = float(np.max(confidence_scores) * 100)
-
-else:
-
-    crack_count = 0
-    avg_conf = 0.0
-    max_conf = 0.0
-
- # Generate YOLO prediction visualization
-annotated = result.plot()
-
-# Convert BGR to RGB
-annotated = annotated[:, :, ::-1].copy()
-
-                    st.success(
-                        "Image analysis completed!"
+                    # YOLO Prediction
+                    results = model.predict(
+                        source=image,
+                        conf=confidence,
+                        iou=0.45,
+                        imgsz=640,
+                        max_det=300,
+                        verbose=False
                     )
+
+                    result = results[0]
+
+                    # Detection Count and Confidence
+                    if result.boxes is not None and len(result.boxes) > 0:
+
+                        crack_count = len(result.boxes)
+
+                        confidence_scores = (
+                            result.boxes.conf.cpu().numpy()
+                        )
+
+                        avg_conf = float(
+                            np.mean(confidence_scores) * 100
+                        )
+
+                        max_conf = float(
+                            np.max(confidence_scores) * 100
+                        )
+
+                    else:
+
+                        crack_count = 0
+                        avg_conf = 0.0
+                        max_conf = 0.0
+
+                    # Prediction Visualization
+                    annotated = result.plot()
+                    annotated = annotated[:, :, ::-1].copy()
+
+                    st.success("Image analysis completed!")
 
                     col1, col2 = st.columns(2)
 
@@ -360,32 +343,41 @@ annotated = annotated[:, :, ::-1].copy()
 
                         st.subheader("Original Image")
 
-                        st.image(image)
+                        st.image(
+                            image,
+                            use_container_width=True
+                        )
 
                     with col2:
 
                         st.subheader("AI Prediction")
 
-                        st.image(annotated)
+                        st.image(
+                            annotated,
+                            use_container_width=True
+                        )
 
                     st.divider()
 
-                   c1, c2, c3 = st.columns(3)
+                    # Display Metrics
+                    c1, c2, c3 = st.columns(3)
 
-c1.metric(
-    "Cracks Detected",
-    crack_count
-)
+                    c1.metric(
+                        "Cracks Detected",
+                        crack_count
+                    )
 
-c2.metric(
-    "Average Confidence",
-    f"{avg_conf:.2f}%"
-)
+                    c2.metric(
+                        "Average Confidence",
+                        f"{avg_conf:.2f}%"
+                    )
 
-c3.metric(
-    "Highest Confidence",
-    f"{max_conf:.2f}%"
-)
+                    c3.metric(
+                        "Highest Confidence",
+                        f"{max_conf:.2f}%"
+                    )
+
+                    # Save Analysis History
                     st.session_state.history.append({
 
                         "Date": datetime.now().strftime(
@@ -399,7 +391,7 @@ c3.metric(
                         "Confidence": round(avg_conf, 2)
 
                     })
-
+```
 
 # ==================================
 # ANALYSIS HISTORY
