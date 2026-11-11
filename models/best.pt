@@ -1,21 +1,5 @@
-import nest_asyncio
-nest_asyncio.apply()
+from google.colab import files
 
-from ultralytics import YOLO
-
-# Load pretrained segmentation model
-model = YOLO("yolov8n-seg.pt")
-
-# Train the model
-results = model.train(
-    data="/crack-seg.ndjson",
-    epochs=5,
-    imgsz=640,
-    batch=8,
-    project="results",
-    name="crack_detection",
-    patience=10,
-    device="cpu"
+files.download(
+    "/content/runs/crackvision/weights/best.pt"
 )
-
-print("Training Completed!")
