@@ -1,14 +1,1 @@
-venv/
-__pycache__/
-*.pyc
 
-.env
-.streamlit/secrets.toml
-
-dataset/
-models/*.pt
-
-results/
-
-.ipynb_checkpoints/
-.DS_Store
