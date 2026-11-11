@@ -1,4 +1,0 @@
-# Segmentation annotations
-Training data: Used to train the model.
-Validation data: Used to monitor training.
-Testing data: Used to evaluate final performance.
