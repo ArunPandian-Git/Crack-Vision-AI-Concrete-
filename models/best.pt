@@ -1,5 +1,0 @@
-from google.colab import files
-
-files.download(
-    "/content/runs/crackvision/weights/best.pt"
-)
