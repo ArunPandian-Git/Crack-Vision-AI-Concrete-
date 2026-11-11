@@ -75,6 +75,7 @@ h1, h2, h3 {
 # MODEL LOADING
 # ==================================
 
+BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = BASE_DIR / "models" / "best.pt"
 
 st.write("Model Path:", str(MODEL_PATH))
