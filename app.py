@@ -319,7 +319,7 @@ elif page == "Crack Detection":
     verbose=False
 )
 
-                    result = results[0]
+                
 # ==================================
 # CRACK COUNT AND CONFIDENCE
 # ==================================
